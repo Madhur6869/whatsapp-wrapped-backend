@@ -58,6 +58,52 @@ const fs = require('fs');
 // // Example usage: replace 'your/file/path.txt' with the actual path to your text file
 // // readTextFile('public/sampleChat.txt');
 
+/// Prateek's version of Regex parsing
+/* // Define the regex to capture date and time, name, and message
+const nameRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] ([\w\s]+): (.*)$/;
+
+// Define the regex to capture date and time, phone number, and message
+const phoneNumberRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] (\+\d+): (.*)$/;
+
+// Function to extract date, name, and message or date, phone number, and message
+function extractInformation(messageString) {
+  const nameMatch = messageString.match(nameRegex);
+  const phoneNumberMatch = messageString.match(phoneNumberRegex);
+
+  if (nameMatch) {
+    const dateAndTime = nameMatch[1];
+    const name = nameMatch[2];
+    const message = nameMatch[3];
+
+    console.log('Date and Time:', dateAndTime);
+    console.log('Name:', name || 'Not available');
+    console.log('Message:', message);
+  } else if (phoneNumberMatch) {
+    const dateAndTime = phoneNumberMatch[1];
+    const phoneNumber = phoneNumberMatch[2];
+    const message = phoneNumberMatch[3];
+
+    console.log('Date and Time:', dateAndTime);
+    console.log('Phone Number:', phoneNumber || 'Not available');
+    console.log('Message:', message);
+  } else {
+    console.log('No match found for either format');
+  }
+}
+
+// Example strings
+const nameBasedString = '[12/28/23, 4:05:28 PM] Ashwin IUB: Hey Madhur';
+const phoneNumberBasedString = '[12/28/23, 4:05:28 PM] +19876543210: Hey Madhur';
+
+// Extract information for the name-based example
+console.log('Extracting information for name-based example:');
+extractInformation(nameBasedString);
+
+// Extract information for the phone number-based example
+console.log('\nExtracting information for phone number-based example:');
+extractInformation(phoneNumberBasedString); */
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.text());
