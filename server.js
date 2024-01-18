@@ -1,4 +1,3 @@
-
 const cors = require("cors");
 const express = require("express");
 const dotenv = require("dotenv");
@@ -10,25 +9,28 @@ dotenv.config({ path: "./.env" });
 
 dbconnect();
 
-const fs = require('fs');
+const fs = require("fs");
 
-// function readTextFile(filePath) {
-//   // Read the file asynchronously
-//   fs.readFile(filePath, 'utf8', (err, data) => {
-//     if (err) {
-//       console.error('Error reading the file:', err);
-//       return;
-//     }
+//Splits the text file - each message is a string - Need to parse and delete irrelevant strings
+function readTextFile(filePath) {
+  // Read the file asynchronously
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading the file:", err);
+      return;
+    }
+    console.log(typeof data)
+    
+      // const searchFormat = /\[\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2}/g;
+      const searchFormat = /\n(?=\[\d{1,2}\/\d{1,2}\/\d{2},)/;
 
-//     // Split the contents into an array of lines
-//     const lines = data.split('\n');
+    // Find occurrences using match
+    const occurrences = data.split(searchFormat);
+    console.log(occurrences)
+  });
+}
 
-//     // Print each line
-//     lines.forEach((line) => {
-//       console.log(line);
-//     });
-//   });
-// }
+readTextFile("public/sample.txt");
 
 // function printEmojiHexCodes(filePath) {
 //     // Read the file asynchronously
@@ -37,11 +39,11 @@ const fs = require('fs');
 //         console.error('Error reading the file:', err);
 //         return;
 //       }
-  
+
 //       // Use a regular expression to find emojis in the text
 //       const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEFF]/g;
 //       const emojis = data.match(emojiRegex);
-  
+
 //       if (emojis) {
 //         // Print hex codes of emojis
 //         emojis.forEach((emoji) => {
@@ -56,14 +58,15 @@ const fs = require('fs');
 
 //   printEmojiHexCodes('public/sampleChat.txt');
 // // Example usage: replace 'your/file/path.txt' with the actual path to your text file
-// // readTextFile('public/sampleChat.txt');
 
 /// Prateek's version of Regex parsing
-/* // Define the regex to capture date and time, name, and message
-const nameRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] ([\w\s]+): (.*)$/;
+// Define the regex to capture date and time, name, and message
+const nameRegex =
+  /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] ([\w\s]+): (.*)$/;
 
 // Define the regex to capture date and time, phone number, and message
-const phoneNumberRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] (\+\d+): (.*)$/;
+const phoneNumberRegex =
+  /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] (\+\d+): (.*)$/;
 
 // Function to extract date, name, and message or date, phone number, and message
 function extractInformation(messageString) {
@@ -75,34 +78,34 @@ function extractInformation(messageString) {
     const name = nameMatch[2];
     const message = nameMatch[3];
 
-    console.log('Date and Time:', dateAndTime);
-    console.log('Name:', name || 'Not available');
-    console.log('Message:', message);
+    console.log("Date and Time:", dateAndTime);
+    console.log("Name:", name || "Not available");
+    console.log("Message:", message);
   } else if (phoneNumberMatch) {
     const dateAndTime = phoneNumberMatch[1];
     const phoneNumber = phoneNumberMatch[2];
     const message = phoneNumberMatch[3];
 
-    console.log('Date and Time:', dateAndTime);
-    console.log('Phone Number:', phoneNumber || 'Not available');
-    console.log('Message:', message);
+    console.log("Date and Time:", dateAndTime);
+    console.log("Phone Number:", phoneNumber || "Not available");
+    console.log("Message:", message);
   } else {
-    console.log('No match found for either format');
+    console.log("No match found for either format");
   }
 }
 
 // Example strings
-const nameBasedString = '[12/28/23, 4:05:28 PM] Ashwin IUB: Hey Madhur';
-const phoneNumberBasedString = '[12/28/23, 4:05:28 PM] +19876543210: Hey Madhur';
+const nameBasedString = "[12/28/23, 4:05:28 PM] Ashwin IUB: Hey Madhur";
+const phoneNumberBasedString =
+  "[12/28/23, 4:05:28 PM] +19876543210: Hey Madhur";
 
 // Extract information for the name-based example
-console.log('Extracting information for name-based example:');
-extractInformation(nameBasedString);
+console.log("Extracting information for name-based example:");
+// extractInformation(nameBasedString);
 
 // Extract information for the phone number-based example
-console.log('\nExtracting information for phone number-based example:');
-extractInformation(phoneNumberBasedString); */
-
+console.log("\nExtracting information for phone number-based example:");
+// extractInformation(phoneNumberBasedString);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -114,7 +117,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is up and running on port: ${process.env.PORT}!`);
