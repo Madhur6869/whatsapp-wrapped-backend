@@ -23,90 +23,99 @@ app.use(
   })
 );
 
+// Message objects will be stored in the following format:
+// [
+//  {
+//    "dateTime": <epoch milliseconds>,
+//    "name": <string>,
+//    "message": <string>
+//  }
+// ]
+let parsedMessages = [];
 
-//Splits the text file - each message is a string - Need to parse and delete irrelevant strings
+// Function to extract timestamp, name or phone number, and message
+function extractInformation(messageString) {
+  const lineSplitRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2}\s[APM]{2})\](.*):(.*)$/;
+  
+  const regexMatch = messageString.match(lineSplitRegex);
+  let isExtractSuccess = false;
+  
+  if (regexMatch !== null) {
+    // The object pushed will have the timestamp in epoch milliseconds
+    // and the message will be cleansed of the following Unicode RTL/LTR
+    // codepoints: \u200a - \u200e, \u202e, \u202f
+    parsedMessages.push({
+      "dateTime": Date.parse(regexMatch[1]),
+      "name": regexMatch[2],
+      "message": regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, '')
+    });
+    isExtractSuccess = true;
+  }
+
+  return isExtractSuccess;
+}
+
+// Reads from WhatsApp export file and stores an array of message objects
+// in parsedMessages
+// WhatsApp export file content format: [DATE, TIME] [SENDER]: [MESSAGE]
 function readTextFile(filePath) {
   // Read the file asynchronously
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) {
-      console.error("Error reading the file:", err);
-      return;
+      console.error("Error reading the file: ", err);
+      return null;
     }
-      const searchFormat = /\n(?=\[\d{1,2}\/\d{1,2}\/\d{2},)/;
     
-    const occurrences = data.split(searchFormat);
-    console.log(occurrences)
+    let messageArray = data.split('\r\n');
+    let matches = 0, misses = 0;
+    
+    for(let i=0; i<messageArray.length; ++i) {
+      if(extractInformation(messageArray[i])) {
+        matches += 1;
+      } else {
+        misses += 1;
+      }
+    }
+    
+    const logMessage = "[" + new Date().toISOString() + "] matches: " + matches + " misses: " + misses;
+    
+    fs.appendFile('./'+process.env.APP_LOG_FILE, logMessage + "\n", (err) => {
+      if (err) {
+        console.error(err);
+      }
+    });
   });
 }
+
+// Read uploaded file
 readTextFile("public/sample.txt");
 
-/// Prateek's version of Regex parsing
+const storage = multer.diskStorage({
+  destination: './public/',
+  filename: (req, file, cb) => {
+    cb(null, uuidv4() + path.extname(file.originalname));
+  },
+});
 
-// Define the regex to capture date and time, name, and message
-const nameRegex =
-  /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] ([\w\s]+): (.*)$/;
+const upload = multer({ storage });
 
-// Define the regex to capture date and time, phone number, and message
-const phoneNumberRegex =
-  /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2} [APMapm]{2})\] (\+\d+): (.*)$/;
-
-// Function to extract date, name, and message or date, phone number, and message
-function extractInformation(messageString) {
-  const nameMatch = messageString.match(nameRegex);
-  const phoneNumberMatch = messageString.match(phoneNumberRegex);
+// Added this GET method to test
+// TODO: Remove this before deploying
+app.get('/api/getData', (req, res) => {
+  let limit = parseInt(req.query.limit) || 5;
   
-  if (nameMatch) {
-    const dateAndTime = nameMatch[1];
-    const name = nameMatch[2];
-    const message = nameMatch[3];
-
-    console.log('Date and Time:', dateAndTime);
-    console.log('Name:', name || 'Not available');
-    console.log('Message:', message);
-  
-  } else if (phoneNumberMatch) {
-    const dateAndTime = phoneNumberMatch[1];
-    const phoneNumber = phoneNumberMatch[2];
-    const message = phoneNumberMatch[3];
-    
-    console.log('Date and Time:', dateAndTime);
-    console.log('Phone Number:', phoneNumber || 'Not available');
-    console.log('Message:', message);
-
-  } else {
-    console.log("No match found for either format");
+  if(limit < 1) {
+    limit = 5;
+  } else if (limit > parsedMessages.length) {
+    limit = parsedMessages.length;
   }
-}
- 
-// Example strings
-
-const nameBasedString = "[12/28/23, 4:05:28 PM] Ashwin IUB: Hey Madhur";
-const phoneNumberBasedString =
-  "[12/28/23, 4:05:28 PM] +19876543210: Hey Madhur";
-
-// Extract information for the name-based example
-// console.log("Extracting information for name-based example:");
-// extractInformation(nameBasedString);
-
-
-// Extract information for the phone number-based example
-// console.log("\nExtracting information for phone number-based example:");
-// extractInformation(phoneNumberBasedString);
-
-  const storage = multer.diskStorage({
-    destination: './public/',
-    filename: (req, file, cb) => {
-      cb(null, uuidv4() + path.extname(file.originalname));
-    },
-  });
-
-  const upload = multer({ storage });
-
+  
+  const limitedMessages = parsedMessages.slice(0, limit);
+  res.json({size: limitedMessages.length, messages: limitedMessages});
+});
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
-
   res.json({ message: 'File uploaded successfully' });
-
 });
 
 app.listen(process.env.PORT, () => {
