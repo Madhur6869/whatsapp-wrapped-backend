@@ -115,6 +115,7 @@ app.get('/api/getData', (req, res) => {
 });
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
+  console.log(req.file.filename)
   res.json({ message: 'File uploaded successfully' });
 });
 
