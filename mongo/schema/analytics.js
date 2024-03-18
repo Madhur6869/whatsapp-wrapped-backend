@@ -17,7 +17,7 @@ const analyticsSchema = new mongoose.Schema({
     },
     emojis:{
         // hex:count
-        type:Object
+        type:Array
     },
     most_active_day:{
         Mon:{

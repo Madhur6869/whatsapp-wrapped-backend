@@ -31,7 +31,7 @@ app.use(
 //    "message": <string>
 //  }
 // ]
-let parsedMessages = [];
+// let parsedMessages = [];
 
 // Function to extract timestamp, name or phone number, and message
 function extractInformation(messageString) {
@@ -44,11 +44,17 @@ function extractInformation(messageString) {
     // The object pushed will have the timestamp in epoch milliseconds
     // and the message will be cleansed of the following Unicode RTL/LTR
     // codepoints: \u200a - \u200e, \u202e, \u202f
-    parsedMessages.push({
+
+    return {
       "dateTime": Date.parse(regexMatch[1]),
       "name": regexMatch[2],
       "message": regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, '')
-    });
+    }
+    // parsedMessages.push({
+    //   "dateTime": Date.parse(regexMatch[1]),
+    //   "name": regexMatch[2],
+    //   "message": regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, '')
+    // });
     isExtractSuccess = true;
   }
 
@@ -77,37 +83,52 @@ function top5UsedEmojis(text) {
 // Reads from WhatsApp export file and stores an array of message objects
 // in parsedMessages
 // WhatsApp export file content format: [DATE, TIME] [SENDER]: [MESSAGE]
-function readTextFile(filePath) {
-  // Read the file asynchronously
-  fs.readFile(filePath, "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading the file: ", err);
-      return null;
-    }
-    
-    let messageArray = data.split('\r\n');
-    let matches = 0, misses = 0;
-    
-    for(let i=0; i<messageArray.length; ++i) {
-      if(extractInformation(messageArray[i])) {
-        matches += 1;
-      } else {
-        misses += 1;
+
+
+function getParsedMessages(filePath) {
+  let parsedMessages = [];
+  let messageArray = [];
+
+  try {
+    const data = fs.readFileSync(filePath, 'utf8');
+    messageArray = data.split('\r\n');
+
+    for (let i = 0; i < messageArray.length; ++i) {
+      const result = extractInformation(messageArray[i]);
+      if (result) {
+        parsedMessages.push(result);
       }
     }
-    
-    const logMessage = "[" + new Date().toISOString() + "] matches: " + matches + " misses: " + misses;
-    
-    fs.appendFile('./'+process.env.APP_LOG_FILE, logMessage + "\n", (err) => {
-      if (err) {
-        console.error(err);
-      }
-    });
-  });
+    console.log("inside file read fn", parsedMessages.length);
+
+    return { parsedMessages, messageArray };
+  } catch (err) {
+    console.error("Error reading the file: ", err);
+    return { parsedMessages: null, messageArray: null };
+  }
 }
 
+function getAverageMessagesPerDay(parsedMessages){
+  
+}
+
+
+function getAnalytics(filename) {
+let analytics = {
+  uid:filename,
+  emojis:[],
+  total_messages:0
+}
+let {parsedMessages,messageArray} = getParsedMessages(`public/${filename}.txt`)
+analytics.emojis = top5UsedEmojis(messageArray.join(""))
+analytics.total_messages = messageArray.length
+console.log(analytics)
+
+}
+
+getAnalytics("sample")
 // Read uploaded file
-readTextFile("public/sample.txt");
+// readTextFile("public/sample.txt");
 
 const storage = multer.diskStorage({
   destination: './public/',
@@ -135,6 +156,7 @@ app.get('/api/getData', (req, res) => {
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
   console.log(req.file.filename)
+  getAnalytics(`public/${req.file.filename}`)
   res.json({ message: 'File uploaded successfully' });
 });
 
