@@ -7,7 +7,7 @@ const analyticsSchema = new mongoose.Schema({
     isGroup:{
         type:Boolean
     },
-    most_active:{
+    most_active_member:{
         name:{
             type:String
         },

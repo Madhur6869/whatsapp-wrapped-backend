@@ -108,20 +108,131 @@ function getParsedMessages(filePath) {
   }
 }
 
-function getAverageMessagesPerDay(parsedMessages){
-  
+function averageMessagesPerDay(messages) {
+  // Initialize an object to store messages per day
+  const messagesPerDay = {};
+
+  // Iterate through messages
+  messages.forEach(message => {
+    // Convert epoch milliseconds to a date
+    const date = new Date(message.dateTime);
+    // Get the date without time
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+    // If day doesn't exist in messagesPerDay, initialize it with count 1
+    if (!messagesPerDay[day]) {
+      messagesPerDay[day] = 1;
+    } else {
+      // Increment count for existing day
+      messagesPerDay[day]++;
+    }
+  });
+
+  // Calculate the total number of days
+  const totalDays = Object.keys(messagesPerDay).length;
+
+  // Calculate the total number of messages
+  const totalMessages = Object.values(messagesPerDay).reduce((acc, curr) => acc + curr, 0);
+
+  // Calculate the average
+  const average = totalMessages / totalDays;
+  // console.log(messagesPerDay)
+  console.log(average)
+  return average;
 }
+
+function calculateMostActiveDay(messagesArray) {
+  const mostActiveDay = {
+    Mon:0 ,
+    Tue:0 ,
+    Wed:0 ,
+    Thu:0 ,
+    Fri:0 ,
+    Sat:0 ,
+    Sun:0 
+  };
+
+  // Iterate through messages
+  messagesArray.forEach(message => {
+    // Convert epoch milliseconds to a date
+    const date = new Date(message.dateTime);
+    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const dayOfWeek = date.getDay();
+    // Convert day of the week to string representation (e.g., "Sun", "Mon", etc.)
+    const dayOfWeekString = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek];
+    // Increment count for the corresponding day of the week
+    mostActiveDay[dayOfWeekString]++;
+  });
+
+  return mostActiveDay;
+}
+
+function findMostActiveMember(messagesArray) {
+  // Create a Set to store distinct names
+  const distinctNames = new Set();
+
+  // Iterate through messages to collect distinct names
+  messagesArray.forEach(message => {
+    distinctNames.add(message.name);
+  });
+
+  // If there are only two distinct names, return null
+  if (distinctNames.size === 2) {
+    return { mostActiveMember: null, messageCount: null };
+  }
+
+  // Create an object to store message counts for each member
+  let memberMessageCounts = {};
+
+  // Iterate through messages
+  messagesArray.forEach(message => {
+    const { name } = message;
+    // Increment message count for the member
+    if (memberMessageCounts[name]) {
+      memberMessageCounts[name]++;
+    } else {
+      memberMessageCounts[name] = 1;
+    }
+  });
+
+  // Find the most active member and their message count
+  let mostActiveMember = null;
+  let maxMessageCount = 0;
+
+  for (const member in memberMessageCounts) {
+    if (memberMessageCounts[member] > maxMessageCount) {
+      mostActiveMember = member;
+      maxMessageCount = memberMessageCounts[member];
+    }
+  }
+
+  return { mostActiveMember, messageCount: maxMessageCount };
+}
+
 
 
 function getAnalytics(filename) {
 let analytics = {
   uid:filename,
+  isGroup:false,
   emojis:[],
-  total_messages:0
+  total_messages:0,
+  average_msgs_per_day:0,
+  most_active_day:{},
+  most_active_member:{name:"",messages:0  }
 }
 let {parsedMessages,messageArray} = getParsedMessages(`public/${filename}.txt`)
 analytics.emojis = top5UsedEmojis(messageArray.join(""))
 analytics.total_messages = messageArray.length
+analytics.average_msgs_per_day= Math.round(averageMessagesPerDay(parsedMessages))
+analytics.most_active_day = calculateMostActiveDay(parsedMessages)
+
+let { mostActiveMember, messageCount} = findMostActiveMember(parsedMessages)
+if (mostActiveMember){
+  analytics.isGroup = true
+  analytics.most_active_member = {name:mostActiveMember,messages:messageCount}
+}
+
 console.log(analytics)
 
 }
