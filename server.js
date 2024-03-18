@@ -55,6 +55,25 @@ function extractInformation(messageString) {
   return isExtractSuccess;
 }
 
+// Returns 5 most occuring emojis
+function top5UsedEmojis(text) {
+  const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // Regex to match emojis
+
+  const emojis = text.match(emojiRegex); // Extract emojis from the text
+
+  if (!emojis) return []; // Return empty array if no emojis found
+
+  const emojiCount = {};
+  emojis.forEach(emoji => {
+      emojiCount[emoji] = (emojiCount[emoji] || 0) + 1; // Count occurrences of each emoji
+  });
+
+  const sortedEmojis = Object.keys(emojiCount).sort((a, b) => emojiCount[b] - emojiCount[a]); // Sort emojis by count
+
+  return sortedEmojis.slice(0, 5).map(emoji => ({ emoji, count: emojiCount[emoji] })); // Return top 5 emojis with counts
+}
+
+
 // Reads from WhatsApp export file and stores an array of message objects
 // in parsedMessages
 // WhatsApp export file content format: [DATE, TIME] [SENDER]: [MESSAGE]
