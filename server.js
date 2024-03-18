@@ -61,52 +61,9 @@ function extractInformation(messageString) {
   return isExtractSuccess;
 }
 
-// Returns 5 most occuring emojis
-function top5UsedEmojis(text) {
-  const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // Regex to match emojis
-
-  const emojis = text.match(emojiRegex); // Extract emojis from the text
-
-  if (!emojis) return []; // Return empty array if no emojis found
-
-  const emojiCount = {};
-  emojis.forEach(emoji => {
-      emojiCount[emoji] = (emojiCount[emoji] || 0) + 1; // Count occurrences of each emoji
-  });
-
-  const sortedEmojis = Object.keys(emojiCount).sort((a, b) => emojiCount[b] - emojiCount[a]); // Sort emojis by count
-
-  return sortedEmojis.slice(0, 5).map(emoji => ({ emoji, count: emojiCount[emoji] })); // Return top 5 emojis with counts
-}
-
-
 // Reads from WhatsApp export file and stores an array of message objects
 // in parsedMessages
 // WhatsApp export file content format: [DATE, TIME] [SENDER]: [MESSAGE]
-
-
-function getParsedMessages(filePath) {
-  let parsedMessages = [];
-  let messageArray = [];
-
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    messageArray = data.split('\r\n');
-
-    for (let i = 0; i < messageArray.length; ++i) {
-      const result = extractInformation(messageArray[i]);
-      if (result) {
-        parsedMessages.push(result);
-      }
-    }
-    console.log("inside file read fn", parsedMessages.length);
-
-    return { parsedMessages, messageArray };
-  } catch (err) {
-    console.error("Error reading the file: ", err);
-    return { parsedMessages: null, messageArray: null };
-  }
-}
 
 function averageMessagesPerDay(messages) {
   // Initialize an object to store messages per day
@@ -209,7 +166,63 @@ function findMostActiveMember(messagesArray) {
   return { mostActiveMember, messageCount: maxMessageCount };
 }
 
+function calculateAverageResponseTime(messages) {
+  if (messages.length === 0) {
+      return 0; // Return 0 if there are no messages
+  }
 
+  let totalResponseTime = 0;
+
+  // Calculate the total response time
+  for (let i = 1; i < messages.length; i++) {
+      totalResponseTime += messages[i].dateTime - messages[i - 1].dateTime;
+  }
+
+  // Calculate the average response time
+  const averageResponseTime = totalResponseTime / (messages.length - 1);
+
+  return averageResponseTime/60000;
+}
+
+function top5UsedEmojis(text) {
+  const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // Regex to match emojis
+
+  const emojis = text.match(emojiRegex); // Extract emojis from the text
+
+  if (!emojis) return []; // Return empty array if no emojis found
+
+  const emojiCount = {};
+  emojis.forEach(emoji => {
+      emojiCount[emoji] = (emojiCount[emoji] || 0) + 1; // Count occurrences of each emoji
+  });
+
+  const sortedEmojis = Object.keys(emojiCount).sort((a, b) => emojiCount[b] - emojiCount[a]); // Sort emojis by count
+
+  return sortedEmojis.slice(0, 5).map(emoji => ({ emoji, count: emojiCount[emoji] })); // Return top 5 emojis with counts
+}
+
+function getParsedMessages(filePath) {
+  let parsedMessages = [];
+  let messageArray = [];
+
+  try {
+    const data = fs.readFileSync(filePath, 'utf8');
+    messageArray = data.split('\r\n');
+
+    for (let i = 0; i < messageArray.length; ++i) {
+      const result = extractInformation(messageArray[i]);
+      if (result) {
+        parsedMessages.push(result);
+      }
+    }
+    console.log("inside file read fn", parsedMessages.length);
+
+    return { parsedMessages, messageArray };
+  } catch (err) {
+    console.error("Error reading the file: ", err);
+    return { parsedMessages: null, messageArray: null };
+  }
+}
 
 function getAnalytics(filename) {
 let analytics = {
@@ -233,7 +246,9 @@ if (mostActiveMember){
   analytics.most_active_member = {name:mostActiveMember,messages:messageCount}
 }
 
-console.log(analytics)
+const average = calculateAverageResponseTime(parsedMessages);
+
+console.log(average)
 
 }
 
