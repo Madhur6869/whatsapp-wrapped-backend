@@ -294,22 +294,30 @@ const upload = multer({ storage });
 app.get("/api/getData", async (req, res) => {
   try {
     let uid = req.query.uid;
-    let result = await analytics.findOne({uid:uid})
-    if(result)
-    res.status(200).json(result);
+    let result = await analytics.findOne({ uid: uid });
+    if (result) res.status(200).json(result);
   } catch (err) {
-    res.status(400).json({"error":"Unable to get data"})
+    res.status(400).json({ error: "Unable to get data" });
   }
 });
 
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   console.log(req.file.filename);
   let analyticsResults = getAnalytics(`${req.file.filename}`);
-  await analytics.create(analyticsResults).then(() => {
-    res.status(200).json({ message: "File uploaded successfully",uid:req.file.filename });
-    return;
-  });
-  res.status(404).json({ error: "Unable to process" });
+  await analytics
+    .create(analyticsResults)
+    .then(() => {
+      res
+        .status(200)
+        .json({
+          message: "File uploaded successfully",
+          uid: req.file.filename,
+        });
+      return;
+    })
+    .catch(() => {
+      res.status(404).json({ error: "Unable to process" });
+    });
 });
 
 app.listen(process.env.PORT, () => {

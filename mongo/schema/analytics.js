@@ -1,69 +1,68 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const analyticsSchema = new mongoose.Schema({
-    uid:{
-        type:String
+  uid: {
+    type: String,
+  },
+  isGroup: {
+    type: Boolean,
+  },
+  most_active_member: {
+    name: {
+      type: String,
     },
-    isGroup:{
-        type:Boolean
+    messages: {
+      type: Number,
     },
-    most_active_member:{
-        name:{
-            type:String
-        },
-        messages:{
-            type:Number
-        }
+  },
+  emojis: {
+    // hex:count
+    type: Array,
+  },
+  most_active_day: {
+    Mon: {
+      type: Number,
+      default: 0,
     },
-    emojis:{
-        // hex:count
-        type:Array
+    Tue: {
+      type: Number,
+      default: 0,
     },
-    most_active_day:{
-        Mon:{
-            type:Number,
-            default:0
-        },
-        Tue:{
-            type:Number,
-            default:0
-        },
-        Wed:{
-            type:Number,
-            default:0
-        },
-        Thu:{
-            type:Number,
-            default:0
-        },
-        Fri:{
-            type:Number,
-            default:0
-        },
-        Sat:{
-            type:Number,
-            default:0
-        },
-        Sun:{
-            type:Number,
-            default:0
-        },
-        
+    Wed: {
+      type: Number,
+      default: 0,
     },
-    average_response_time:{
-        type:String
+    Thu: {
+      type: Number,
+      default: 0,
     },
-    average_msgs_per_day:{
-        type:Number
+    Fri: {
+      type: Number,
+      default: 0,
     },
-    total_messages:{
-        type:Number
-    }   
-
+    Sat: {
+      type: Number,
+      default: 0,
+    },
+    Sun: {
+      type: Number,
+      default: 0,
+    },
+  },
+  average_response_time: {
+    type: String,
+  },
+  average_msgs_per_day: {
+    type: Number,
+  },
+  total_messages: {
+    type: Number,
+  },
+  time: { type: Date, default: Date.now },
 });
 
-const analyticsModel = mongoose.connection.useDb('ANALYTICS');
+const analyticsModel = mongoose.connection.useDb("ANALYTICS");
 
-const analytics = analyticsModel.model('analytics', analyticsSchema);
+const analytics = analyticsModel.model("analytics", analyticsSchema);
 
 module.exports = analytics;
