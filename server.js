@@ -293,13 +293,24 @@ app.get("/api/getData", async (req, res) => {
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   console.log(req.file.filename);
   let analyticsResults = getAnalytics(`${req.file.filename}`);
+  // fs.unlink(`public/${req.file.filename}`)
   await analytics
     .create(analyticsResults)
-    .then(() => {
+    .then(async () => {
+
+      fs.unlink(`public/${req.file.filename}`, (err) => {
+        if (err) {
+          console.error('Error deleting file:', err);
+          // return res.status(500).send({ error: "Unable to delete file" });
+        }
+        console.log('File deleted successfully');
+      });
+
       res.status(200).send({
         message: "File uploaded successfully",
         uid: req.file.filename,
       });
+      
     })
     .catch(() => {
       res.status(404).send({ error: "Unable to process" });
