@@ -293,11 +293,15 @@ const upload = multer({ storage });
 // TODO: Remove this before deploying
 app.get("/api/getData", async (req, res) => {
   try {
+    if(!uid)
+    {
+      throw "UID required"
+    }
     let uid = req.query.uid;
     let result = await analytics.findOne({ uid: uid });
-    if (result) res.status(200).json(result);
+    if (result) res.status(200).send(result);
   } catch (err) {
-    res.status(400).json({ error: "Unable to get data" });
+    res.status(400).send({ error: "Unable to get data", msg:err });
   }
 });
 
@@ -309,14 +313,13 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
     .then(() => {
       res
         .status(200)
-        .json({
+        .send({
           message: "File uploaded successfully",
           uid: req.file.filename,
         });
-      return;
     })
     .catch(() => {
-      res.status(404).json({ error: "Unable to process" });
+      res.status(404).send({ error: "Unable to process" });
     });
 });
 
