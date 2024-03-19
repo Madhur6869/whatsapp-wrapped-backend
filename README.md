@@ -4,11 +4,16 @@ Express.js API to handle WhatsApp chat export file uploads. Each uploaded file w
 
 ## Setup Environment
 
-1. Create `logs/` directory in the root of the repository. This will allow the app to create the `app.log` file.
+1. Ensure that a `.env` file exists in the root of the repository. This file should have the *MongoDB connection URI* and a *port number*
 
-2. Ensure that a `.env` file exists in the root of the repository. This file should have the *MongoDB connection URI*, *port number* and *log file path*: `APP_LOG_FILE=logs/app.log`
+2. Install dependencies: `npm install`
 
-## Build App Image
+## Run Application
+1. DEV: `npm run start:dev`
+2. PROD: `npm run start:prod`
+
+## Containerize
+### Build Application Image
 
 Command: `docker build [--no-cache] -t <IMAGE_NAME>:<TAG> .`
 
@@ -20,7 +25,7 @@ More information: [docker build | Docker Docs](https://docs.docker.com/engine/re
 
 Example: `docker build --no-cache -t wawrapped-backend:1.0.0 .`
 
-## Run App Container
+### Run Application Container
 
 Command: `docker run --name=<CONTAINER_NAME> --env-file <ENV_FILE_PATH> -dp <HOST_PORT>:<CONTAINER_PORT> <IMAGE_NAME>:<TAG>`
 
