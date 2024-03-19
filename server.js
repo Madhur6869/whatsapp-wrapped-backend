@@ -25,15 +25,16 @@ app.use(
   })
 );
 
-// Message objects will be stored in the following format:
-// [
-//  {
-//    "dateTime": <epoch milliseconds>,
-//    "name": <string>,
-//    "message": <string>
-//  }
-// ]
-// let parsedMessages = [];
+/**
+ * Message objects will be stored in the following format:
+ * [
+ * 	{
+ * 		"dateTime": <epoch milliseconds>,
+ * 		"name": <string>,
+ * 		"message": <string>
+ * 	}
+ * ]
+ */
 
 // Function to extract timestamp, name or phone number, and message
 function extractInformation(messageString) {
@@ -41,7 +42,6 @@ function extractInformation(messageString) {
     /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2}\s[APM]{2})\](.*):(.*)$/;
 
   const regexMatch = messageString.match(lineSplitRegex);
-  let isExtractSuccess = false;
 
   if (regexMatch !== null) {
     // The object pushed will have the timestamp in epoch milliseconds
@@ -53,15 +53,9 @@ function extractInformation(messageString) {
       name: regexMatch[2],
       message: regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, ""),
     };
-    // parsedMessages.push({
-    //   "dateTime": Date.parse(regexMatch[1]),
-    //   "name": regexMatch[2],
-    //   "message": regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, '')
-    // });
-    isExtractSuccess = true;
   }
 
-  return isExtractSuccess;
+  return null;
 }
 
 // Reads from WhatsApp export file and stores an array of message objects
@@ -102,10 +96,7 @@ function averageMessagesPerDay(messages) {
   );
 
   // Calculate the average
-  const average = totalMessages / totalDays;
-  // console.log(messagesPerDay)
-  console.log(average);
-  return average;
+  return totalMessages / totalDays;
 }
 
 function calculateMostActiveDay(messagesArray) {
@@ -174,7 +165,6 @@ function findMostActiveMember(messagesArray) {
       maxMessageCount = memberMessageCounts[member];
     }
   }
-
   return { mostActiveMember, messageCount: maxMessageCount };
 }
 
@@ -225,8 +215,8 @@ function getParsedMessages(filePath) {
     const data = fs.readFileSync(filePath, "utf8");
     messageArray = data.split("\r\n");
 
-    for (let i = 0; i < messageArray.length; ++i) {
-      const result = extractInformation(messageArray[i]);
+    for (const element of messageArray) {
+      const result = extractInformation(element);
       if (result) {
         parsedMessages.push(result);
       }
@@ -248,7 +238,7 @@ function getAnalytics(filename) {
     average_msgs_per_day: 0,
     most_active_day: {},
     most_active_member: { name: "", messages: 0 },
-    average_msgs_per_day: 0,
+    average_response_time:0,
   };
   let { parsedMessages, messageArray } = getParsedMessages(
     `public/${filename}`
@@ -269,17 +259,14 @@ function getAnalytics(filename) {
     };
   }
 
-  analytics.average_msgs_per_day = Math.round(
+  analytics.average_response_time = Math.round(
     calculateAverageResponseTime(parsedMessages)
   );
 
   return analytics;
 }
 
-// getAnalytics("sample");
 // Read uploaded file
-// readTextFile("public/sample.txt");
-
 const storage = multer.diskStorage({
   destination: "./public/",
   filename: (req, file, cb) => {
@@ -289,19 +276,17 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Added this GET method to test
-// TODO: Remove this before deploying
 app.get("/api/getData", async (req, res) => {
   try {
-    if(!uid)
-    {
-      throw "UID required"
-    }
     let uid = req.query.uid;
+
+    if (!uid) {
+      throw "UID required";
+    }
     let result = await analytics.findOne({ uid: uid });
     if (result) res.status(200).send(result);
   } catch (err) {
-    res.status(400).send({ error: "Unable to get data", msg:err });
+    res.status(400).send({ error: "Unable to get data", msg: err });
   }
 });
 
@@ -311,12 +296,10 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   await analytics
     .create(analyticsResults)
     .then(() => {
-      res
-        .status(200)
-        .send({
-          message: "File uploaded successfully",
-          uid: req.file.filename,
-        });
+      res.status(200).send({
+        message: "File uploaded successfully",
+        uid: req.file.filename,
+      });
     })
     .catch(() => {
       res.status(404).send({ error: "Unable to process" });
@@ -324,5 +307,5 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
 });
 
 app.listen(process.env.PORT, () => {
-  console.log(`Server is up and running on port: ${process.env.PORT}!`);
+  console.log(`Server is up and running on port: ${process.env.PORT}`);
 });
