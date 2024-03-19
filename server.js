@@ -306,7 +306,7 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   console.log(req.file.filename);
   let analyticsResults = getAnalytics(`${req.file.filename}`);
   await analytics.create(analyticsResults).then(() => {
-    res.status(200).json({ message: "File uploaded successfully" });
+    res.status(200).json({ message: "File uploaded successfully",uid:req.file.filename });
     return;
   });
   res.status(404).json({ error: "Unable to process" });
