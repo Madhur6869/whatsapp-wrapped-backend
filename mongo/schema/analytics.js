@@ -64,6 +64,6 @@ const analyticsSchema = new mongoose.Schema({
 
 const analyticsModel = mongoose.connection.useDb('ANALYTICS');
 
-const analytics = analyticsModel.model('analytics', apkSchema);
+const analytics = analyticsModel.model('analytics', analyticsSchema);
 
 module.exports = analytics;

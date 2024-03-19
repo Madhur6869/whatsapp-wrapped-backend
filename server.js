@@ -2,11 +2,13 @@ const cors = require("cors");
 const express = require("express");
 const dotenv = require("dotenv");
 const dbconnect = require("./mongo/dbconnect");
-const multer = require('multer')
-const path = require('path');
-const {v4: uuidv4} = require('uuid');
+const multer = require("multer");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 const app = express();
-const fs = require('fs');
+const fs = require("fs");
+
+const analytics = require("./mongo/schema/analytics");
 
 dotenv.config({ path: "./.env" });
 
@@ -35,21 +37,22 @@ app.use(
 
 // Function to extract timestamp, name or phone number, and message
 function extractInformation(messageString) {
-  const lineSplitRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2}\s[APM]{2})\](.*):(.*)$/;
-  
+  const lineSplitRegex =
+    /^\[(\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}:\d{2}\s[APM]{2})\](.*):(.*)$/;
+
   const regexMatch = messageString.match(lineSplitRegex);
   let isExtractSuccess = false;
-  
+
   if (regexMatch !== null) {
     // The object pushed will have the timestamp in epoch milliseconds
     // and the message will be cleansed of the following Unicode RTL/LTR
     // codepoints: \u200a - \u200e, \u202e, \u202f
 
     return {
-      "dateTime": Date.parse(regexMatch[1]),
-      "name": regexMatch[2],
-      "message": regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, '')
-    }
+      dateTime: Date.parse(regexMatch[1]),
+      name: regexMatch[2],
+      message: regexMatch[3].replaceAll(/[\u200a-\u200e\u202e\u202f]/gu, ""),
+    };
     // parsedMessages.push({
     //   "dateTime": Date.parse(regexMatch[1]),
     //   "name": regexMatch[2],
@@ -70,11 +73,15 @@ function averageMessagesPerDay(messages) {
   const messagesPerDay = {};
 
   // Iterate through messages
-  messages.forEach(message => {
+  messages.forEach((message) => {
     // Convert epoch milliseconds to a date
     const date = new Date(message.dateTime);
     // Get the date without time
-    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const day = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    ).getTime();
 
     // If day doesn't exist in messagesPerDay, initialize it with count 1
     if (!messagesPerDay[day]) {
@@ -89,34 +96,39 @@ function averageMessagesPerDay(messages) {
   const totalDays = Object.keys(messagesPerDay).length;
 
   // Calculate the total number of messages
-  const totalMessages = Object.values(messagesPerDay).reduce((acc, curr) => acc + curr, 0);
+  const totalMessages = Object.values(messagesPerDay).reduce(
+    (acc, curr) => acc + curr,
+    0
+  );
 
   // Calculate the average
   const average = totalMessages / totalDays;
   // console.log(messagesPerDay)
-  console.log(average)
+  console.log(average);
   return average;
 }
 
 function calculateMostActiveDay(messagesArray) {
   const mostActiveDay = {
-    Mon:0 ,
-    Tue:0 ,
-    Wed:0 ,
-    Thu:0 ,
-    Fri:0 ,
-    Sat:0 ,
-    Sun:0 
+    Mon: 0,
+    Tue: 0,
+    Wed: 0,
+    Thu: 0,
+    Fri: 0,
+    Sat: 0,
+    Sun: 0,
   };
 
   // Iterate through messages
-  messagesArray.forEach(message => {
+  messagesArray.forEach((message) => {
     // Convert epoch milliseconds to a date
     const date = new Date(message.dateTime);
     // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const dayOfWeek = date.getDay();
     // Convert day of the week to string representation (e.g., "Sun", "Mon", etc.)
-    const dayOfWeekString = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek];
+    const dayOfWeekString = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+      dayOfWeek
+    ];
     // Increment count for the corresponding day of the week
     mostActiveDay[dayOfWeekString]++;
   });
@@ -129,7 +141,7 @@ function findMostActiveMember(messagesArray) {
   const distinctNames = new Set();
 
   // Iterate through messages to collect distinct names
-  messagesArray.forEach(message => {
+  messagesArray.forEach((message) => {
     distinctNames.add(message.name);
   });
 
@@ -142,7 +154,7 @@ function findMostActiveMember(messagesArray) {
   let memberMessageCounts = {};
 
   // Iterate through messages
-  messagesArray.forEach(message => {
+  messagesArray.forEach((message) => {
     const { name } = message;
     // Increment message count for the member
     if (memberMessageCounts[name]) {
@@ -168,20 +180,20 @@ function findMostActiveMember(messagesArray) {
 
 function calculateAverageResponseTime(messages) {
   if (messages.length === 0) {
-      return 0; // Return 0 if there are no messages
+    return 0; // Return 0 if there are no messages
   }
 
   let totalResponseTime = 0;
 
   // Calculate the total response time
   for (let i = 1; i < messages.length; i++) {
-      totalResponseTime += messages[i].dateTime - messages[i - 1].dateTime;
+    totalResponseTime += messages[i].dateTime - messages[i - 1].dateTime;
   }
 
   // Calculate the average response time
   const averageResponseTime = totalResponseTime / (messages.length - 1);
 
-  return averageResponseTime/60000;
+  return averageResponseTime / 60000;
 }
 
 function top5UsedEmojis(text) {
@@ -192,13 +204,17 @@ function top5UsedEmojis(text) {
   if (!emojis) return []; // Return empty array if no emojis found
 
   const emojiCount = {};
-  emojis.forEach(emoji => {
-      emojiCount[emoji] = (emojiCount[emoji] || 0) + 1; // Count occurrences of each emoji
+  emojis.forEach((emoji) => {
+    emojiCount[emoji] = (emojiCount[emoji] || 0) + 1; // Count occurrences of each emoji
   });
 
-  const sortedEmojis = Object.keys(emojiCount).sort((a, b) => emojiCount[b] - emojiCount[a]); // Sort emojis by count
+  const sortedEmojis = Object.keys(emojiCount).sort(
+    (a, b) => emojiCount[b] - emojiCount[a]
+  ); // Sort emojis by count
 
-  return sortedEmojis.slice(0, 5).map(emoji => ({ emoji, count: emojiCount[emoji] })); // Return top 5 emojis with counts
+  return sortedEmojis
+    .slice(0, 5)
+    .map((emoji) => ({ emoji, count: emojiCount[emoji] })); // Return top 5 emojis with counts
 }
 
 function getParsedMessages(filePath) {
@@ -206,8 +222,8 @@ function getParsedMessages(filePath) {
   let messageArray = [];
 
   try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    messageArray = data.split('\r\n');
+    const data = fs.readFileSync(filePath, "utf8");
+    messageArray = data.split("\r\n");
 
     for (let i = 0; i < messageArray.length; ++i) {
       const result = extractInformation(messageArray[i]);
@@ -215,7 +231,6 @@ function getParsedMessages(filePath) {
         parsedMessages.push(result);
       }
     }
-    console.log("inside file read fn", parsedMessages.length);
 
     return { parsedMessages, messageArray };
   } catch (err) {
@@ -225,39 +240,48 @@ function getParsedMessages(filePath) {
 }
 
 function getAnalytics(filename) {
-let analytics = {
-  uid:filename,
-  isGroup:false,
-  emojis:[],
-  total_messages:0,
-  average_msgs_per_day:0,
-  most_active_day:{},
-  most_active_member:{name:"",messages:0  }
+  let analytics = {
+    uid: filename,
+    isGroup: false,
+    emojis: [],
+    total_messages: 0,
+    average_msgs_per_day: 0,
+    most_active_day: {},
+    most_active_member: { name: "", messages: 0 },
+    average_msgs_per_day: 0,
+  };
+  let { parsedMessages, messageArray } = getParsedMessages(
+    `public/${filename}`
+  );
+  analytics.emojis = top5UsedEmojis(messageArray.join(""));
+  analytics.total_messages = messageArray.length;
+  analytics.average_msgs_per_day = Math.round(
+    averageMessagesPerDay(parsedMessages)
+  );
+  analytics.most_active_day = calculateMostActiveDay(parsedMessages);
+
+  let { mostActiveMember, messageCount } = findMostActiveMember(parsedMessages);
+  if (mostActiveMember) {
+    analytics.isGroup = true;
+    analytics.most_active_member = {
+      name: mostActiveMember,
+      messages: messageCount,
+    };
+  }
+
+  analytics.average_msgs_per_day = Math.round(
+    calculateAverageResponseTime(parsedMessages)
+  );
+
+  return analytics;
 }
-let {parsedMessages,messageArray} = getParsedMessages(`public/${filename}.txt`)
-analytics.emojis = top5UsedEmojis(messageArray.join(""))
-analytics.total_messages = messageArray.length
-analytics.average_msgs_per_day= Math.round(averageMessagesPerDay(parsedMessages))
-analytics.most_active_day = calculateMostActiveDay(parsedMessages)
 
-let { mostActiveMember, messageCount} = findMostActiveMember(parsedMessages)
-if (mostActiveMember){
-  analytics.isGroup = true
-  analytics.most_active_member = {name:mostActiveMember,messages:messageCount}
-}
-
-const average = calculateAverageResponseTime(parsedMessages);
-
-console.log(average)
-
-}
-
-getAnalytics("sample")
+// getAnalytics("sample");
 // Read uploaded file
 // readTextFile("public/sample.txt");
 
 const storage = multer.diskStorage({
-  destination: './public/',
+  destination: "./public/",
   filename: (req, file, cb) => {
     cb(null, uuidv4() + path.extname(file.originalname));
   },
@@ -267,23 +291,25 @@ const upload = multer({ storage });
 
 // Added this GET method to test
 // TODO: Remove this before deploying
-app.get('/api/getData', (req, res) => {
-  let limit = parseInt(req.query.limit) || 5;
-  
-  if(limit < 1) {
-    limit = 5;
-  } else if (limit > parsedMessages.length) {
-    limit = parsedMessages.length;
+app.get("/api/getData", async (req, res) => {
+  try {
+    let uid = req.query.uid;
+    let result = await analytics.findOne({uid:uid})
+    if(result)
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({"error":"Unable to get data"})
   }
-  
-  const limitedMessages = parsedMessages.slice(0, limit);
-  res.json({size: limitedMessages.length, messages: limitedMessages});
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  console.log(req.file.filename)
-  getAnalytics(`public/${req.file.filename}`)
-  res.json({ message: 'File uploaded successfully' });
+app.post("/api/upload", upload.single("file"), async (req, res) => {
+  console.log(req.file.filename);
+  let analyticsResults = getAnalytics(`${req.file.filename}`);
+  await analytics.create(analyticsResults).then(() => {
+    res.status(200).json({ message: "File uploaded successfully" });
+    return;
+  });
+  res.status(404).json({ error: "Unable to process" });
 });
 
 app.listen(process.env.PORT, () => {
