@@ -7,6 +7,7 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const app = express();
 const fs = require("fs");
+const emojiRegex = require('emoji-regex');
 
 const analytics = require("./mongo/schema/analytics");
 
@@ -187,9 +188,10 @@ function calculateAverageResponseTime(messages) {
 }
 
 function top5UsedEmojis(text) {
-  const emojiRegex = /\p{Emoji}/gu; // Regex to match emojis
 
-  const emojis = text.match(emojiRegex); // Extract emojis from the text
+  const regex = emojiRegex();
+  // const emojis = text.match(emojiRegex); // Extract emojis from the text
+  const emojis = text.match(regex); // Extract emojis from the text
 
   if (!emojis) return []; // Return empty array if no emojis found
 
