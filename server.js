@@ -187,7 +187,7 @@ function calculateAverageResponseTime(messages) {
 }
 
 function top5UsedEmojis(text) {
-  const emojiRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // Regex to match emojis
+  const emojiRegex = /\p{Emoji}/gu; // Regex to match emojis
 
   const emojis = text.match(emojiRegex); // Extract emojis from the text
 
@@ -281,7 +281,7 @@ app.get("/api/getData", async (req, res) => {
     let uid = req.query.uid;
 
     if (!uid) {
-      throw "UID required";
+      throw Error("UID required");
     }
     let result = await analytics.findOne({ uid: uid });
     if (result) res.status(200).send(result);
@@ -293,7 +293,6 @@ app.get("/api/getData", async (req, res) => {
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   console.log(req.file.filename);
   let analyticsResults = getAnalytics(`${req.file.filename}`);
-  // fs.unlink(`public/${req.file.filename}`)
   await analytics
     .create(analyticsResults)
     .then(async () => {
@@ -301,7 +300,6 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
       fs.unlink(`public/${req.file.filename}`, (err) => {
         if (err) {
           console.error('Error deleting file:', err);
-          // return res.status(500).send({ error: "Unable to delete file" });
         }
         console.log('File deleted successfully');
       });
